@@ -14,7 +14,12 @@ from unstructured.cleaners.core import (
 )
 from unstructured.partition.html import partition_html
 import re
-
+import chromadb
+from chromadb.config import Settings
+client = chromadb.Client(Settings(chroma_db_impl="news",
+                                    persist_directory="/content/"
+                                ))
+news_collection = client.create_collection("News_Collection")
 # python -m bytewax.run
 API_KEY = 'PKF3KMYDUEAUK0S112HX'
 SECRET = 'n1hrmo48mJpBoyV7LtVtx6XflUjZymEwd9d9RFev'
@@ -139,7 +144,14 @@ def clean_data(contents):
     contents = clean_extra_whitespace(contents)
     print(f"After cleanup: {contents}")
     return contents
-    
+
+def add_to_chromadb(contents):
+    news_collection.add(
+        documents=[contents],
+        metadatas=[{"source": "Python For Everyone"}],
+        ids=["id1"]
+        )
+
 flow = Dataflow()
 flow.input("input", build_input())
 flow.flat_map(lambda messages: get_messages(messages))
