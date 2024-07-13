@@ -20,8 +20,8 @@ import numpy as np
 from datetime import datetime, timedelta
 
 
-API_KEY = 'PKF3KMYDUEAUK0S112HX'
-SECRET = 'n1hrmo48mJpBoyV7LtVtx6XflUjZymEwd9d9RFev'
+API_KEY = 'xyz'
+SECRET = 'xyz'
 TICKERS = ['MSFT']
 db = chromadb.PersistentClient(path=r"D:\Raghu Studies\FinancialAdvisor\chroma_dir")
 model_name = "all-MiniLM-L6-v2"
