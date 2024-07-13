@@ -15,18 +15,19 @@ from unstructured.cleaners.core import (
 from unstructured.partition.html import partition_html
 import re
 import chromadb
-from chromadb.config import Settings
-client = chromadb.Client(Settings(chroma_db_impl="news",
-                                    persist_directory="/content/"
-                                ))
-news_collection = client.create_collection("News_Collection")
-# python -m bytewax.run
+from chromadb.utils import embedding_functions
+import numpy as np
+from datetime import datetime, timedelta
+
+
 API_KEY = 'PKF3KMYDUEAUK0S112HX'
 SECRET = 'n1hrmo48mJpBoyV7LtVtx6XflUjZymEwd9d9RFev'
 TICKERS = ['MSFT']
-# util
-from datetime import datetime, timedelta
+db = chromadb.PersistentClient(path=r"D:\Raghu Studies\FinancialAdvisor\chroma_dir")
+model_name = "all-MiniLM-L6-v2"
+model = embedding_functions.SentenceTransformerEmbeddingFunction(model_name)
 
+# python -m bytewax.run
 def split_date_range(from_date, to_date, num_intervals):
     # Convert input strings to datetime objects
     from_date = datetime.strptime(from_date, '%Y-%m-%d')
@@ -62,7 +63,6 @@ class AlpacaBatch(DynamicInput):
         self.url = "https://data.alpaca.markets/v1beta1/news"
 
     def build(self, worker_index, worker_count):
-        print("Taking sir")
         worker_date_range = split_date_range(self.from_date, self.to_date, worker_count)
         current_from_date, current_to_date = worker_date_range[worker_index] # current wormer's value
         return AlpacaBatchInput(self.url, current_from_date, current_to_date)
@@ -100,8 +100,6 @@ class AlpacaClient:
         self._page_token = None
 
     def list(self):
-        print(self.headers)
-        print(self.params)
         self.params['page_token'] = self._page_token
         response = requests.get(self.url, headers=self.headers, params=self.params)
         
@@ -129,32 +127,55 @@ def build_input() -> Input:
 
 def get_messages(messages):
     # Number of messages retrieved is 50
-    print(len(messages))
     message_content = []
     for message in messages:
         message_content.append(message['content'])
     return message_content
 
 def clean_data(contents):
-    print(f"Before cleanup: {contents}")
     TAG_RE = re.compile(r'<[^>]+>')
     contents = TAG_RE.sub('', contents)
     contents = group_broken_paragraphs(contents)
     contents = clean_non_ascii_chars(contents)
     contents = clean_extra_whitespace(contents)
-    print(f"After cleanup: {contents}")
     return contents
 
 def add_to_chromadb(contents):
-    news_collection.add(
-        documents=[contents],
-        metadatas=[{"source": "Python For Everyone"}],
-        ids=["id1"]
-        )
+    
+    collection_name = "finance"
+    document = contents
+    # Check if collection exists, if not create it
+    collection = db.get_or_create_collection(collection_name)
+
+    results = collection.query(
+        query_texts=[contents],
+        n_results=2
+    )
+    # checking duplicates
+    match_list = [d for d in results['distances'][0] if np.abs(d) < 0.0001]
+    
+    if(not match_list):
+        embeddings_sent = model([document])
+        pattern = re.compile(r'\d+')
+        result_ids = collection.get()['ids']
+        # Extract numbers from each string in results
+        result_ids = sorted([int(pattern.search(item).group()) for item in result_ids])
+        if(len(result_ids) == 0):
+            # if this is the first entry
+            final_id = 'ID1'
+            collection.add(embeddings=embeddings_sent, documents=[document], ids=[final_id])
+        else:
+            final_id = "ID"+str(result_ids[-1] + 1)
+            collection.add(embeddings=embeddings_sent, documents=[document], ids=[final_id])
+        print(f"Successfully added {document}")
+    else:
+        print("cannot add documents")
+    return 1
 
 flow = Dataflow()
 flow.input("input", build_input())
 flow.flat_map(lambda messages: get_messages(messages))
 flow.map(lambda messages: clean_data(messages))
+flow.map(lambda messages: add_to_chromadb(messages))
 messages = flow.output("output",StdOutput())
 
