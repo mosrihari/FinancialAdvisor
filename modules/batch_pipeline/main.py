@@ -20,9 +20,8 @@ import numpy as np
 from datetime import datetime, timedelta
 
 
-API_KEY = 'xyz'
-SECRET = 'xyz'
-TICKERS = ['MSFT']
+API_KEY = 'abc'
+SECRET = 'abc'
 db = chromadb.PersistentClient(path=r"D:\Raghu Studies\FinancialAdvisor\chroma_dir")
 model_name = "all-MiniLM-L6-v2"
 model = embedding_functions.SentenceTransformerEmbeddingFunction(model_name)
@@ -54,10 +53,10 @@ def split_date_range(from_date, to_date, num_intervals):
     return result
 
 class AlpacaBatch(DynamicInput):
-    def __init__(self, from_date, to_date, tickers):
+    def __init__(self, from_date, to_date, ticker):
         self.from_date = from_date
         self.to_date = to_date
-        self.tickers = tickers 
+        self.ticker = ticker 
         self.api_key = API_KEY
         self.secret = SECRET
         self.url = "https://data.alpaca.markets/v1beta1/news"
@@ -65,19 +64,21 @@ class AlpacaBatch(DynamicInput):
     def build(self, worker_index, worker_count):
         worker_date_range = split_date_range(self.from_date, self.to_date, worker_count)
         current_from_date, current_to_date = worker_date_range[worker_index] # current wormer's value
-        return AlpacaBatchInput(self.url, current_from_date, current_to_date)
+        return AlpacaBatchInput(self.url, current_from_date, current_to_date, self.ticker)
 
 class AlpacaBatchInput(StatelessSource):
-    def __init__(self, url, current_from_date, current_to_date):
+    def __init__(self, url, current_from_date, current_to_date, ticker):
         self.url = url
         self.current_from_date = current_from_date
         self.current_to_date = current_to_date
-        self.alpaca_client = build_alpaca_client(self.url, self.current_from_date, self.current_to_date)
+        self.ticker = ticker
+        self.alpaca_client = build_alpaca_client(self.url, self.current_from_date, 
+                                                 self.current_to_date, self.ticker)
     
     def next(self):
         return self.alpaca_client.list()
 
-def build_alpaca_client(url, current_from_date, current_to_date):  
+def build_alpaca_client(url, current_from_date, current_to_date, ticker):  
     headers = {
                     "accept": "application/json",
                     "APCA-API-KEY-ID": API_KEY,
@@ -86,7 +87,7 @@ def build_alpaca_client(url, current_from_date, current_to_date):
     params = {
         "start": current_from_date,
         "end"  : current_to_date,
-        "symbols": TICKERS,
+        "symbols": ticker,
         "include_content": True,
         "limit": 50
     }
@@ -118,12 +119,13 @@ class AlpacaClient:
 
         return news_json["news"]
 
-def build_input() -> Input:
+def build_input(ticker) -> Input:
     get_current_date = datetime.today()
     get_past_date = get_current_date - timedelta(days=90)
     to_date = datetime.strftime(get_current_date, "%Y-%m-%d")
     from_date = datetime.strftime(get_past_date, "%Y-%m-%d")
-    return AlpacaBatch(from_date, to_date, TICKERS)
+    print(ticker)
+    return AlpacaBatch(from_date, to_date, ticker)
 
 def get_messages(messages):
     # Number of messages retrieved is 50
@@ -167,15 +169,21 @@ def add_to_chromadb(contents):
         else:
             final_id = "ID"+str(result_ids[-1] + 1)
             collection.add(embeddings=embeddings_sent, documents=[document], ids=[final_id])
-        print(f"Successfully added {document}")
     else:
-        print("cannot add documents")
-    return 1
+        pass
+    return None
 
-flow = Dataflow()
-flow.input("input", build_input())
-flow.flat_map(lambda messages: get_messages(messages))
-flow.map(lambda messages: clean_data(messages))
-flow.map(lambda messages: add_to_chromadb(messages))
-messages = flow.output("output",StdOutput())
+def flow_builder(ticker):
+    flow = Dataflow()
+    flow.input("input", build_input(ticker))
+    flow.flat_map(lambda messages: get_messages(messages))
+    flow.map(lambda messages: clean_data(messages))
+    flow.map(lambda messages: add_to_chromadb(messages))
+    messages = flow.output("output",StdOutput())
+    return flow
+
+# if __name__ == "__main__":
+#     flow = flow_builder()
+#     print("Success")
+    
 
