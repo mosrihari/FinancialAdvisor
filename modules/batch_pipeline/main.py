@@ -13,8 +13,8 @@ import chromadb
 from chromadb.utils import embedding_functions
 
 # Alpaca API credentials
-API_KEY = 'PKNA9BZKOZCJQCEFT1NR'
-API_SECRET = 'IaJMEQzWTbUqLLpf20JfoomceBMJoQvkGiEKYQ8Q'
+API_KEY = ''
+API_SECRET = ''
 BASE_URL = 'https://data.alpaca.markets/v1beta1/news'
 db = chromadb.PersistentClient(path=r"D:\Raghu Studies\FinancialAdvisor\chroma_dir")
 model_name = "all-MiniLM-L6-v2"
@@ -81,7 +81,12 @@ def add_to_chromadb(contents):
             collection.add(embeddings=embeddings_sent, documents=[document], ids=[final_id])
     else:
         pass
-    return None
+    results = collection.query(
+                        query_texts=["I am planning to invest in Facebook"],
+                        n_results=3
+                    )
+    print(results)
+    return collection
 
 
 if __name__ == '__main__':        
@@ -91,5 +96,6 @@ if __name__ == '__main__':
         news_df = pd.DataFrame(news_data)
         news_df['clean_data'] = news_df['content'].apply(clean_data)
         news_df['clean_data'].apply(lambda x: add_to_chromadb(x))
+        
     else:
         print("No news data")
