@@ -11,7 +11,9 @@ import re
 from unstructured.partition.html import partition_html
 import chromadb
 from chromadb.utils import embedding_functions
-
+from kafka import KafkaProducer,KafkaConsumer
+import json
+import ast
 # Alpaca API credentials
 API_KEY = ''
 API_SECRET = ''
@@ -28,7 +30,7 @@ def fetch_alpaca_news(ticker, limit=50, start_date=None, end_date=None):
     }
     
     params = {
-        'symbols': ticker,
+    #    'symbols': ticker,
         'limit': limit,
         'start': start_date if start_date else (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'),
         'end': end_date if end_date else datetime.now().strftime('%Y-%m-%d'),
@@ -81,21 +83,58 @@ def add_to_chromadb(contents):
             collection.add(embeddings=embeddings_sent, documents=[document], ids=[final_id])
     else:
         pass
+    return True
+
+def query_data(collection, question): #list of list
     results = collection.query(
-                        query_texts=["I am planning to invest in Facebook"],
-                        n_results=3
+                    query_texts=[question],
+                    n_results=5
                     )
-    print(results)
-    return collection
+    return results['documents']
 
+def send_to_kafka(data):
+    collection_name = "finance"
+    collection = db.get_or_create_collection(collection_name)
+    results = query_data(collection, data['question'])
+    data['context'] = results
+    producer = KafkaProducer(
+        bootstrap_servers='localhost:9092',
+        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+    )
+    
+    producer.send('data_collection', data)
+    producer.flush()
 
-if __name__ == '__main__':        
-    ticker = 'AAPL'
+def consume():
+    consumer = KafkaConsumer(
+        'gradio_events',               # Topic name
+        bootstrap_servers='localhost:9092',  # Kafka broker
+        auto_offset_reset='earliest',        # Start at the earliest available message
+        enable_auto_commit=True,             # Automatically commit offsets
+        group_id='gradio-events-group',      # Consumer group ID
+        value_deserializer=lambda x: x.decode('utf-8')  # Decode message from bytes to string
+        )
+    try:
+        for message in consumer:
+            # Print consumed message
+            print(f"Message consumed: {message.value} of type {type(message)} from partition {message.partition}, offset {message.offset}")
+            data = message.value
+            data = ast.literal_eval(data)
+            print(data)
+            break
+    except:
+        print("Stopping consumer...")
+    consumer.close()
+    return data
+
+if __name__ == '__main__': 
+    input_data = consume()       
+    ticker = ['*']
     news_data = fetch_alpaca_news(ticker, limit=10)
     if news_data:
         news_df = pd.DataFrame(news_data)
         news_df['clean_data'] = news_df['content'].apply(clean_data)
-        news_df['clean_data'].apply(lambda x: add_to_chromadb(x))
-        
+        is_done = news_df['clean_data'].apply(lambda x: add_to_chromadb(x))
+        send_to_kafka(input_data) 
     else:
         print("No news data")
