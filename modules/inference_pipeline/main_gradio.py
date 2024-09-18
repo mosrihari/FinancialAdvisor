@@ -4,6 +4,9 @@ import nltk
 from nltk.tokenize import word_tokenize
 from kafka import KafkaProducer
 import json
+import ollama
+from kafka import KafkaConsumer
+import ast
 
 
 question_words = ["what", "why", "when", "where", 
@@ -21,6 +24,37 @@ def check_question(question):
     else:
         return 0
     
+def final_response():
+    consumer = KafkaConsumer(
+    'summary',               # Topic name
+    bootstrap_servers='localhost:9092',  # Kafka broker
+    auto_offset_reset='earliest',        # Start at the earliest available message
+    enable_auto_commit=True,             # Automatically commit offsets
+    group_id='summary-group',      # Consumer group ID
+    value_deserializer=lambda x: x.decode('utf-8')  # Decode message from bytes to string
+    )
+    try:
+        for message in consumer:
+            # Print consumed message
+            print(f"Message consumed: {message.value} of type {type(message)} from partition {message.partition}, offset {message.offset}")
+            data = message.value
+            data = ast.literal_eval(data)
+            break
+    except:
+        print("Stopping consumer...")
+    consumer.close()
+
+    merged_prompt = "ABOUT_ME:{}QUESTION:{}CONTEXT:{}"
+
+        
+    response = ollama.chat(model='mosrihari/unsloth_finance_alpaca', messages=[
+            {"role": "user", "content": merged_prompt.format(
+                    data['about_me'],
+                    data['question'],
+                    data['summary']
+                )},
+            ])
+    return response['message']['content']
 
 def send_to_kafka(data):
     producer = KafkaProducer(
@@ -40,7 +74,8 @@ def respond_chat(message, history):
     is_question = check_question(message)
     if is_question:
         send_to_kafka(chat_dict)
-        return "Check VSCODE"
+        suggestion = final_response()
+        return suggestion
     else:
         return "Ask question about where you want to invest"
 

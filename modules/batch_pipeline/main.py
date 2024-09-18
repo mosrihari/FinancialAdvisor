@@ -14,9 +14,13 @@ from chromadb.utils import embedding_functions
 from kafka import KafkaProducer,KafkaConsumer
 import json
 import ast
+import os
+from dotenv import load_dotenv
+load_dotenv()
 # Alpaca API credentials
-API_KEY = ''
-API_SECRET = ''
+API_KEY = os.getenv('ALPACA_API_KEY')
+API_SECRET = os.getenv('ALPACA_SECRET_KEY')
+print(API_KEY, API_SECRET)
 BASE_URL = 'https://data.alpaca.markets/v1beta1/news'
 db = chromadb.PersistentClient(path=r"D:\Raghu Studies\FinancialAdvisor\chroma_dir")
 model_name = "all-MiniLM-L6-v2"
