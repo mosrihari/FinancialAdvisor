@@ -1,0 +1,5 @@
+transformers==4.43.2
+chroma-hnswlib==0.7.3
+chromadb==0.5.3
+kafka-python==2.0.2
+sentence-transformers==2.5.1

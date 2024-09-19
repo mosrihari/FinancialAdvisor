@@ -1,0 +1,18 @@
+# Use a slim Python image
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Install dependencies
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the Python module into the container
+COPY main_gradio.py ./main_gradio.py
+
+# Expose the necessary port (for Gradio UI)
+EXPOSE 7860
+
+# Run the inference script
+CMD ["python", "./main_gradio.py"]
