@@ -1,50 +1,85 @@
-version: '3'
+version: '3.8'
+
 services:
+  batch:
+    build:
+      context: ./modules/batch_pipeline  # Pointing to the batch directory within modules
+      dockerfile: Dockerfile.batch
+    depends_on:
+      - kafka
+      - chromadb
+    env_file:  # Load environment variables from .env file
+      - ./modules/batch_pipeline/.env
+    networks:
+      - project-network
+
+  summarizer:
+    build:
+      context: ./modules/summarization
+      dockerfile: Dockerfile.summary
+    depends_on:
+      - kafka
+    networks:
+      - project-network
+
+  output:
+    build:
+      context: ./modules/inference_pipeline
+      dockerfile: Dockerfile.inference
+    depends_on:
+      - kafka
+    ports:
+      - "7860:7860"
+    networks:
+      - project-network
+
+  chromadb:
+    image: chromadb/chromadb
+    ports:
+      - "8000:8000"
+    networks:
+      - project-network
+    volumes:
+      - chromadb_data:/data  # Persistent volume for ChromaDB
+
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.2.1
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - project-network
 
   kafka:
-    image: confluentinc/cp-kafka:7.2.1
+    image: wurstmeister/kafka
     ports:
       - "9092:9092"
     environment:
-      KAFKA_BROKER_ID: 1
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9092,OUTSIDE://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - project-network
+    depends_on:
+      - zookeeper
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
-  chromadb:
-    image: chromadb-image
-    ports:
-      - "8000:8000"
-
-  batch:
-    build:
-      context: .
-      dockerfile: modules/batch_pipeline/Dockerfile.batch
-    environment:
-      - ALPACA_API_KEY=${ALPACA_API_KEY}
-      - ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}
+  create-topics:
+    image: wurstmeister/kafka
     depends_on:
       - kafka
-      - chromadb
+    command: >
+      bash -c "
+      kafka-topics.sh --create --topic input_topic --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 &&
+      kafka-topics.sh --create --topic articles_topic --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 &&
+      kafka-topics.sh --create --topic summary_topic --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1"
+    networks:
+      - project-network
 
-  summary:
-    build:
-      context: .
-      dockerfile: modules/summarization/Dockerfile.summary
-    depends_on:
-      - kafka
-      - chromadb
+networks:
+  project-network:
+    driver: bridge
 
-  inference:
-    build:
-      context: .
-      dockerfile: modules/inference_pipeline/Dockerfile.inference
-    depends_on:
-      - kafka
-      - chromadb
+volumes:
+  chromadb_data:  # Volume for ChromaDB persistence

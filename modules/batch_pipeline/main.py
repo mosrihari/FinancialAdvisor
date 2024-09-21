@@ -22,7 +22,8 @@ API_KEY = os.getenv('ALPACA_API_KEY')
 API_SECRET = os.getenv('ALPACA_SECRET_KEY')
 print(API_KEY, API_SECRET)
 BASE_URL = 'https://data.alpaca.markets/v1beta1/news'
-db = chromadb.PersistentClient(path=r"D:\Raghu Studies\FinancialAdvisor\chroma_dir")
+#db = chromadb.PersistentClient(path=r"D:\Raghu Studies\FinancialAdvisor\chroma_dir")
+db = chromadb.Client("http://chromadb:8000")
 model_name = "all-MiniLM-L6-v2"
 model = embedding_functions.SentenceTransformerEmbeddingFunction(model_name)
 
