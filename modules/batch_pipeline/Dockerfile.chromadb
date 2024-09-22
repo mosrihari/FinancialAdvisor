@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install ChromaDB and required packages
+RUN pip install chromadb
+
+# Set up a persistent volume for data storage
+VOLUME /data
+
+# Run ChromaDB
+CMD ["chromadb", "--persist_directory", "/data"]
