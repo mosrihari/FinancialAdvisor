@@ -9,4 +9,4 @@ RUN pip install chromadb
 VOLUME /data
 
 # Run ChromaDB
-CMD ["chromadb", "--persist_directory", "/data"]
+CMD ["chroma", "run", "--host", "localhost", "--port", "8000", "--path", "/data"]

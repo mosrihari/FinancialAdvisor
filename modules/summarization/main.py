@@ -17,7 +17,7 @@ def summarize(results):
 def consume():
     consumer = KafkaConsumer(
         'data_collection',               # Topic name
-        bootstrap_servers='localhost:9092',  # Kafka broker
+        bootstrap_servers='kafka:9093',  # Kafka broker
         auto_offset_reset='earliest',        # Start at the earliest available message
         enable_auto_commit=True,             # Automatically commit offsets
         group_id='data-collection-group',      # Consumer group ID
@@ -39,7 +39,7 @@ def consume():
 def send_to_kafka(data):
     
     producer = KafkaProducer(
-        bootstrap_servers='localhost:9092',
+        bootstrap_servers='kafka:9093',
         value_serializer=lambda v: json.dumps(v).encode('utf-8')
     )
     producer.send('summary', data)

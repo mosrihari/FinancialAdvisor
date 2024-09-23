@@ -27,7 +27,7 @@ def check_question(question):
 def final_response():
     consumer = KafkaConsumer(
     'summary',               # Topic name
-    bootstrap_servers='localhost:9092',  # Kafka broker
+    bootstrap_servers='kafka:9093',  # Kafka broker
     auto_offset_reset='earliest',        # Start at the earliest available message
     enable_auto_commit=True,             # Automatically commit offsets
     group_id='summary-group',      # Consumer group ID
@@ -58,7 +58,7 @@ def final_response():
 
 def send_to_kafka(data):
     producer = KafkaProducer(
-        bootstrap_servers='localhost:9092',
+        bootstrap_servers='kafka:9093',
         value_serializer=lambda v: json.dumps(v).encode('utf-8')
     )
     

@@ -20,7 +20,6 @@ load_dotenv()
 # Alpaca API credentials
 API_KEY = os.getenv('ALPACA_API_KEY')
 API_SECRET = os.getenv('ALPACA_SECRET_KEY')
-print(API_KEY, API_SECRET)
 BASE_URL = 'https://data.alpaca.markets/v1beta1/news'
 #db = chromadb.PersistentClient(path=r"D:\Raghu Studies\FinancialAdvisor\chroma_dir")
 db = chromadb.Client("http://chromadb:8000")
@@ -103,7 +102,7 @@ def send_to_kafka(data):
     results = query_data(collection, data['question'])
     data['context'] = results
     producer = KafkaProducer(
-        bootstrap_servers='localhost:9092',
+        bootstrap_servers='kafka:9093',
         value_serializer=lambda v: json.dumps(v).encode('utf-8')
     )
     
@@ -113,7 +112,7 @@ def send_to_kafka(data):
 def consume():
     consumer = KafkaConsumer(
         'gradio_events',               # Topic name
-        bootstrap_servers='localhost:9092',  # Kafka broker
+        bootstrap_servers='kafka:9093',  # Kafka broker
         auto_offset_reset='earliest',        # Start at the earliest available message
         enable_auto_commit=True,             # Automatically commit offsets
         group_id='gradio-events-group',      # Consumer group ID
