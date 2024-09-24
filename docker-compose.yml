@@ -71,9 +71,9 @@ services:
       - kafka
     command: >
       bash -c "
-      kafka-topics.sh --create --topic gradio_events --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 &&
-      kafka-topics.sh --create --topic data_collection --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 &&
-      kafka-topics.sh --create --topic summary --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1"
+      kafka-topics.sh --create --topic gradio_events --bootstrap-server kafka:9093 --replication-factor 1 --partitions 1 &&
+      kafka-topics.sh --create --topic data_collection --bootstrap-server kafka:9093 --replication-factor 1 --partitions 1 &&
+      kafka-topics.sh --create --topic summary --bootstrap-server kafka:9093 --replication-factor 1 --partitions 1"
     networks:
       - project-network
 

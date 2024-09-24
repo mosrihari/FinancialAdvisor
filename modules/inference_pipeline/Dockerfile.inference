@@ -7,7 +7,7 @@ WORKDIR /usr/src/app
 # Install dependencies
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-
+RUN python -m nltk.downloader punkt
 # Copy the Python module into the container
 COPY main_gradio.py ./main_gradio.py
 

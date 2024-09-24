@@ -7,7 +7,14 @@ import json
 import ollama
 from kafka import KafkaConsumer
 import ast
+from pydantic import BaseModel, ValidationError
 
+# Define the Pydantic model
+class UserInput(BaseModel):
+    text: str
+
+    class Config:
+        arbitrary_types_allowed = True
 
 question_words = ["what", "why", "when", "where", 
              "name", "is", "how", "do", "does", 
@@ -66,7 +73,7 @@ def send_to_kafka(data):
     producer.flush()
 
 def respond_chat(message, history):
-    
+    validated_inputs = UserInput(message)
     if "about_me" not in chat_dict.keys():
         chat_dict["about_me"] = message
     else:
@@ -80,4 +87,4 @@ def respond_chat(message, history):
         return "Ask question about where you want to invest"
 
 iface = gr.ChatInterface(respond_chat)
-iface.launch()
+iface.launch(server_name="0.0.0.0", server_port=7860)
