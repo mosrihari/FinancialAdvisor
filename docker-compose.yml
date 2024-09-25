@@ -38,6 +38,8 @@ services:
     container_name: chromadb_container
     volumes:
       - chromadb_data:/data
+    ports:
+      - "8000:8000"
     networks:
       - project-network
 
