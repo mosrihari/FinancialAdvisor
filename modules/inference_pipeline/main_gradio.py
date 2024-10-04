@@ -7,7 +7,7 @@ import json
 import ollama
 from kafka import KafkaConsumer
 import ast
-
+import time
 question_words = ["what", "why", "when", "where", 
              "name", "is", "how", "do", "does", 
              "which", "are", "could", "would", 
@@ -24,23 +24,33 @@ def check_question(question):
         return 0
     
 def final_response():
-    consumer = KafkaConsumer(
-    'summary',               # Topic name
-    bootstrap_servers='kafka:9093',  # Kafka broker
-    auto_offset_reset='earliest',        # Start at the earliest available message
-    enable_auto_commit=True,             # Automatically commit offsets
-    group_id='summary-group',      # Consumer group ID
-    value_deserializer=lambda x: x.decode('utf-8')  # Decode message from bytes to string
-    )
-    try:
-        for message in consumer:
-            # Print consumed message
-            print(f"Message consumed: {message.value} of type {type(message)} from partition {message.partition}, offset {message.offset}")
-            data = message.value
-            data = ast.literal_eval(data)
+    max_retries = 5
+    retry_count = 0
+    flag = False
+    while retry_count < max_retries:
+        try:
+            consumer = KafkaConsumer(
+            'summary',               # Topic name
+            bootstrap_servers='kafka:9093',  # Kafka broker
+            auto_offset_reset='earliest',        # Start at the earliest available message
+            enable_auto_commit=True,             # Automatically commit offsets
+            group_id='summary-group',      # Consumer group ID
+            value_deserializer=lambda x: x.decode('utf-8')  # Decode message from bytes to string
+            )
+            for message in consumer:
+                # Print consumed message
+                print(f"Message consumed: {message.value} of type {type(message)} from partition {message.partition}, offset {message.offset}")
+                data = message.value
+                data = ast.literal_eval(data)
+                flag = True
+                break
+        except:
+            retry_count += 1
+            print("Stopping consumer...")
+            flag = False
+            time.sleep(10)
+        if flag:
             break
-    except:
-        print("Stopping consumer...")
     consumer.close()
 
     merged_prompt = "ABOUT_ME:{}QUESTION:{}CONTEXT:{}"

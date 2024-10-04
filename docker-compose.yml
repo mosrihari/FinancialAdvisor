@@ -5,7 +5,9 @@ services:
       dockerfile: Dockerfile.batch
     depends_on:
       - kafka
-      - chromadb
+      - chroma
+    volumes:
+      - ./:/app/
     env_file:  # Load environment variables from .env file
       - ./modules/batch_pipeline/.env
     networks:
@@ -30,16 +32,13 @@ services:
       - "7860:7860"
     networks:
       - project-network
-
-  chromadb:
-    build:
-      context: ./modules/batch_pipeline
-      dockerfile: Dockerfile.chromadb
-    container_name: chromadb_container
+  
+  chroma:
+    image: ghcr.io/chroma-core/chroma:latest
     volumes:
-      - chromadb_data:/data
+      - index_data:/chroma/.chroma/index
     ports:
-      - "8000:8000"
+      - 8000:8000
     networks:
       - project-network
 
@@ -64,6 +63,11 @@ services:
       - project-network
     depends_on:
       - zookeeper
+    healthcheck:
+      test: ["CMD", "zookeeper-shell.sh", "localhost:2181", "ruok"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
@@ -73,6 +77,7 @@ services:
       - kafka
     command: >
       bash -c "
+      until kafka-topics.sh --bootstrap-server kafka:9093 --list; do sleep 5; done;
       kafka-topics.sh --create --topic gradio_events --bootstrap-server kafka:9093 --replication-factor 1 --partitions 1 &&
       kafka-topics.sh --create --topic data_collection --bootstrap-server kafka:9093 --replication-factor 1 --partitions 1 &&
       kafka-topics.sh --create --topic summary --bootstrap-server kafka:9093 --replication-factor 1 --partitions 1"
@@ -84,4 +89,7 @@ networks:
     driver: bridge
 
 volumes:
-  chromadb_data:  # Volume for ChromaDB persistence
+  index_data:
+    driver: local
+  backups:
+    driver: local

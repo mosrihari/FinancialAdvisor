@@ -10,19 +10,23 @@ from unstructured.cleaners.core import (
 import re
 from unstructured.partition.html import partition_html
 import chromadb
+from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 from kafka import KafkaProducer,KafkaConsumer
 import json
 import ast
 import os
 from dotenv import load_dotenv
+import time
+
 load_dotenv()
 # Alpaca API credentials
 API_KEY = os.getenv('ALPACA_API_KEY')
 API_SECRET = os.getenv('ALPACA_SECRET_KEY')
 BASE_URL = 'https://data.alpaca.markets/v1beta1/news'
 #db = chromadb.PersistentClient(path=r"D:\Raghu Studies\FinancialAdvisor\chroma_dir")
-db = chromadb.Client("http://chromadb:8000")
+
+#db = chromadb.Client("http://chromadb:8000")
 model_name = "all-MiniLM-L6-v2"
 model = embedding_functions.SentenceTransformerEmbeddingFunction(model_name)
 
@@ -60,11 +64,16 @@ def clean_data(contents):
     return contents
 
 def add_to_chromadb(contents):
+    
     collection_name = "finance"
     document = contents
-    # Check if collection exists, if not create it
-    collection = db.get_or_create_collection(collection_name)
-
+    collection_status = False
+    while collection_status != True:
+        try:
+            collection = db.get_or_create_collection(name=collection_name)
+            collection_status = True
+        except Exception as e:
+            pass
     results = collection.query(
         query_texts=[contents],
         n_results=2
@@ -105,7 +114,7 @@ def send_to_kafka(data):
         bootstrap_servers='kafka:9093',
         value_serializer=lambda v: json.dumps(v).encode('utf-8')
     )
-    
+    print(f"Message published to data_collection:{data['context']}")
     producer.send('data_collection', data)
     producer.flush()
 
@@ -131,7 +140,26 @@ def consume():
     consumer.close()
     return data
 
-if __name__ == '__main__': 
+def wait_for_chromadb(host="chromadb_container", port=8000, timeout=100):
+    url = f"http://{host}:{port}"
+    start_time = time.time()
+    
+    while time.time() - start_time < timeout:
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                print("ChromaDB is available!")
+                return True
+        except requests.ConnectionError:
+            print("Waiting for ChromaDB to be available...")
+            time.sleep(5)  # Wait 5 seconds before retrying
+    
+    raise TimeoutError(f"Failed to connect to ChromaDB at {url} within {timeout} seconds")
+
+
+if __name__ == '__main__':
+    #wait_for_chromadb()
+    db = chromadb.HttpClient(host="chroma", port = 8000, settings=Settings(allow_reset=True, anonymized_telemetry=False))
     input_data = consume()       
     ticker = ['*']
     news_data = fetch_alpaca_news(ticker, limit=10)
