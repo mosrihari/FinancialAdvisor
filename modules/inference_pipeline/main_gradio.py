@@ -55,7 +55,7 @@ def final_response():
     consumer.close()
 
     merged_prompt = "ABOUT_ME:{}QUESTION:{}CONTEXT:{}"
-    ollama.pull(model='mosrihari/unsloth_finance_alpaca')
+    #ollama.pull(model='mosrihari/unsloth_finance_alpaca')
     response = ollama.chat(model='mosrihari/unsloth_finance_alpaca', messages=[
             {"role": "user", "content": merged_prompt.format(
                     data['about_me'],
