@@ -30,9 +30,10 @@ services:
       - kafka
     ports:
       - "7860:7860"
+      - "11434:11434"
     networks:
       - project-network
-  
+
   chroma:
     image: ghcr.io/chroma-core/chroma:latest
     volumes:

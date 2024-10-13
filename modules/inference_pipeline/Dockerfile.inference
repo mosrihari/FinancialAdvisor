@@ -11,8 +11,15 @@ RUN python -m nltk.downloader punkt
 # Copy the Python module into the container
 COPY main_gradio.py ./main_gradio.py
 
+# download ollama
+RUN curl -fsSL https://ollama.com/install.sh | sh
 # Expose the necessary port (for Gradio UI)
-EXPOSE 7860
+COPY id_ed25519 /root/.ollama/id_ed25519
+RUN chmod 600 /root/.ollama/id_ed25519
+
+
+EXPOSE 7860 11434
 
 # Run the inference script
-CMD ["python", "./main_gradio.py"]
+CMD ollama serve & python ./main_gradio.py
+#CMD ["python", "./main_gradio.py"]

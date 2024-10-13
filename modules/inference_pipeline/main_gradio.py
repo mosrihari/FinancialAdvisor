@@ -24,7 +24,7 @@ def check_question(question):
         return 0
     
 def final_response():
-    max_retries = 5
+    max_retries = 10
     retry_count = 0
     flag = False
     while retry_count < max_retries:
@@ -42,6 +42,7 @@ def final_response():
                 print(f"Message consumed: {message.value} of type {type(message)} from partition {message.partition}, offset {message.offset}")
                 data = message.value
                 data = ast.literal_eval(data)
+                print(data)
                 flag = True
                 break
         except:
@@ -54,8 +55,7 @@ def final_response():
     consumer.close()
 
     merged_prompt = "ABOUT_ME:{}QUESTION:{}CONTEXT:{}"
-
-        
+    ollama.pull(model='mosrihari/unsloth_finance_alpaca')
     response = ollama.chat(model='mosrihari/unsloth_finance_alpaca', messages=[
             {"role": "user", "content": merged_prompt.format(
                     data['about_me'],
