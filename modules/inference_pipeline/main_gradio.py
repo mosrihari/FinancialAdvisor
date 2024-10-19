@@ -52,7 +52,7 @@ def final_response():
             time.sleep(10)
         if flag:
             break
-    consumer.close()
+    #consumer.close()
 
     merged_prompt = "ABOUT_ME:{}QUESTION:{}CONTEXT:{}"
     #ollama.pull(model='mosrihari/unsloth_finance_alpaca')
@@ -83,6 +83,7 @@ def respond_chat(message, history):
     is_question = check_question(message)
     if is_question:
         send_to_kafka(chat_dict)
+        chat_dict.clear()
         suggestion = final_response()
         return suggestion
     else:

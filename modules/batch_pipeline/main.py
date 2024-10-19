@@ -137,7 +137,7 @@ def consume():
             break
     except:
         print("Stopping consumer...")
-    consumer.close()
+    #consumer.close()
     return data
 
 def wait_for_chromadb(host="chromadb_container", port=8000, timeout=100):
@@ -159,14 +159,19 @@ def wait_for_chromadb(host="chromadb_container", port=8000, timeout=100):
 
 if __name__ == '__main__':
     #wait_for_chromadb()
-    db = chromadb.HttpClient(host="chroma", port = 8000, settings=Settings(allow_reset=True, anonymized_telemetry=False))
-    input_data = consume()       
-    ticker = ['*']
-    news_data = fetch_alpaca_news(ticker, limit=10)
-    if news_data:
-        news_df = pd.DataFrame(news_data)
-        news_df['clean_data'] = news_df['content'].apply(clean_data)
-        is_done = news_df['clean_data'].apply(lambda x: add_to_chromadb(x))
-        send_to_kafka(input_data) 
-    else:
-        print("No news data")
+    while True:
+        try:
+            db = chromadb.HttpClient(host="chroma", port = 8000, settings=Settings(allow_reset=True, anonymized_telemetry=False))
+            input_data = consume()       
+            ticker = ['*']
+            news_data = fetch_alpaca_news(ticker, limit=10)
+            if news_data:
+                news_df = pd.DataFrame(news_data)
+                news_df['clean_data'] = news_df['content'].apply(clean_data)
+                is_done = news_df['clean_data'].apply(lambda x: add_to_chromadb(x))
+                send_to_kafka(input_data) 
+            else:
+                print("No news data")
+            time.sleep(60)
+        except:
+            print("Error occured")

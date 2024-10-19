@@ -44,7 +44,7 @@ def consume():
             time.sleep(10)
         if flag:
             break
-    consumer.close()
+    #consumer.close()
     return data # dictionary
 
 def send_to_kafka(data):
@@ -58,7 +58,12 @@ def send_to_kafka(data):
     producer.flush()
 
 if __name__ == '__main__':
-    results = consume()
-    summary = summarize(results['context'])
-    results['summary'] = summary
-    send_to_kafka(results)
+    while True:
+        try:
+            results = consume()
+            summary = summarize(results['context'])
+            results['summary'] = summary
+            send_to_kafka(results)
+            time.sleep(60)
+        except:
+            print("Error occured")
