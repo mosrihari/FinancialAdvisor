@@ -36,7 +36,8 @@ def consume():
                 data = ast.literal_eval(data)
                 print(data)
                 flag = True
-                break
+                return data
+                #break
         except:
             retry_count += 1
             print("Stopping consumer...")
@@ -45,7 +46,7 @@ def consume():
         if flag:
             break
     #consumer.close()
-    return data # dictionary
+    return None # dictionary
 
 def send_to_kafka(data):
     

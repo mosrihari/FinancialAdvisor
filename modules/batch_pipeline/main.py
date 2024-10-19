@@ -134,11 +134,12 @@ def consume():
             data = message.value
             data = ast.literal_eval(data)
             print(data)
-            break
+            return data
+            #break
     except:
         print("Stopping consumer...")
     #consumer.close()
-    return data
+    return None
 
 def wait_for_chromadb(host="chromadb_container", port=8000, timeout=100):
     url = f"http://{host}:{port}"
