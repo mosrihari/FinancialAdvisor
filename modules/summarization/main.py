@@ -25,7 +25,7 @@ def consume():
                 'data_collection',               # Topic name
                 bootstrap_servers='kafka:9093',  # Kafka broker
                 auto_offset_reset='earliest',        # Start at the earliest available message
-                enable_auto_commit=True,             # Automatically commit offsets
+                enable_auto_commit=False,             # Automatically commit offsets
                 group_id='data-collection-group',      # Consumer group ID
                 value_deserializer=lambda x: x.decode('utf-8')  # Decode message from bytes to string
                 )
@@ -36,6 +36,7 @@ def consume():
                 data = ast.literal_eval(data)
                 print(data)
                 flag = True
+                consumer.commit()
                 return data
                 #break
         except:

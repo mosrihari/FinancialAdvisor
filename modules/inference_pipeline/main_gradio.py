@@ -33,7 +33,7 @@ def final_response():
             'summary',               # Topic name
             bootstrap_servers='kafka:9093',  # Kafka broker
             auto_offset_reset='earliest',        # Start at the earliest available message
-            enable_auto_commit=True,             # Automatically commit offsets
+            enable_auto_commit=False,             # Automatically commit offsets
             group_id='summary-group',      # Consumer group ID
             value_deserializer=lambda x: x.decode('utf-8')  # Decode message from bytes to string
             )
@@ -44,6 +44,7 @@ def final_response():
                 data = ast.literal_eval(data)
                 print(data)
                 flag = True
+                consumer.commit()
                 break
         except:
             retry_count += 1
