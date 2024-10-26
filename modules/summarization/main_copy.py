@@ -22,7 +22,9 @@ def consume():
         auto_offset_reset='earliest',     # Start at the earliest available message
         enable_auto_commit=False,         # Manually commit offsets
         group_id='data-collection-group', # Consumer group ID
-        value_deserializer=lambda x: x.decode('utf-8')  # Decode message from bytes to string
+        value_deserializer=lambda x: x.decode('utf-8'),  # Decode message from bytes to string
+        session_timeout_ms=30000,          # Set the session timeout to 30 seconds
+        max_poll_interval_ms=300000 
     )
     for message in consumer:
         print(f"Message consumed: {message.value} from partition {message.partition}, offset {message.offset}")

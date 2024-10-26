@@ -26,7 +26,9 @@ def final_response():
         auto_offset_reset='earliest',
         enable_auto_commit=False,
         group_id='summary-group',
-        value_deserializer=lambda x: x.decode('utf-8')
+        value_deserializer=lambda x: x.decode('utf-8'),
+        session_timeout_ms=30000,          # Set the session timeout to 30 seconds
+        max_poll_interval_ms=300000 
     )
     for message in consumer:
         data = ast.literal_eval(message.value)

@@ -9,9 +9,9 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the Python module into the container
-COPY main_copy.py ./main_copy.py
+COPY main.py ./main.py
 
 ENV ALPACA_API_KEY=${ALPACA_API_KEY}
 ENV ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}
 
-CMD ["python", "./main_copy.py"]
+CMD ["python", "./main.py"]

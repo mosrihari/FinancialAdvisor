@@ -83,13 +83,16 @@ def send_to_kafka(data):
     producer.flush()
 
 def consume_and_process():
+    print("batch pipeline is up")
     consumer = KafkaConsumer(
         'gradio_events',
         bootstrap_servers='kafka:9093',
         auto_offset_reset='earliest',
         enable_auto_commit=False,
         group_id='gradio-events-group',
-        value_deserializer=lambda x: x.decode('utf-8')
+        value_deserializer=lambda x: x.decode('utf-8'),
+        session_timeout_ms=30000,          # Set the session timeout to 30 seconds
+        max_poll_interval_ms=300000 
     )
     
     for message in consumer:
