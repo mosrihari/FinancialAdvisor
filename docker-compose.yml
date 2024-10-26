@@ -81,10 +81,6 @@ services:
       bash -c "
       until kafka-topics.sh --bootstrap-server kafka:9093 --list; do sleep 5; done;
       
-      for topic in gradio_events data_collection summary; do
-          kafka-topics.sh --bootstrap-server kafka:9093 --delete --topic $topic || true;
-      done;
-      
       kafka-topics.sh --create --topic gradio_events --bootstrap-server kafka:9093 --replication-factor 1 --partitions 1 &&
       kafka-topics.sh --create --topic data_collection --bootstrap-server kafka:9093 --replication-factor 1 --partitions 1 &&
       kafka-topics.sh --create --topic summary --bootstrap-server kafka:9093 --replication-factor 1 --partitions 1"
