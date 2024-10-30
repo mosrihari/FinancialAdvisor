@@ -10,6 +10,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the Python module into the container
 COPY main.py ./main.py
+COPY fetch_news.py ./fetch_news.py
+COPY preprocessing.py ./preprocessing.py
+COPY kafka_events.py ./kafka_events.py
 
 ENV ALPACA_API_KEY=${ALPACA_API_KEY}
 ENV ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}
