@@ -2,7 +2,7 @@ import pandas as pd
 import chromadb
 from chromadb.config import Settings
 import time
-from kakfa_events import consume, send_to_kafka
+from kafka_events import consume, send_to_kafka
 from fetch_news import fetch_alpaca_news
 from preprocessing import clean_data, add_to_chromadb
 
