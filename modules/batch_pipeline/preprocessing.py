@@ -6,9 +6,9 @@ from unstructured.cleaners.core import (
 )
 import re
 from chromadb.utils import embedding_functions
+import settings
 
-
-model_name = "all-MiniLM-L6-v2"
+model_name = settings.EMBEDDING_MODEL_NAME
 model = embedding_functions.SentenceTransformerEmbeddingFunction(model_name)
 
 def clean_data(contents):
@@ -19,9 +19,9 @@ def clean_data(contents):
     contents = clean_extra_whitespace(contents)
     return contents
 
-def add_to_chromadb(contents):
+def add_to_chromadb(contents, db):
     
-    collection_name = "finance"
+    collection_name = settings.CHROMA_DB_COLLECTION
     document = contents
     collection_status = False
     while collection_status != True:
@@ -57,7 +57,7 @@ def add_to_chromadb(contents):
 def query_data(collection, question): #list of list
     results = collection.query(
                     query_texts=[question],
-                    n_results=5
+                    n_results=settings.N_QUERY_RESULTS
                     )
     return results['documents']
 

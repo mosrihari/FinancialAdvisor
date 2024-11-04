@@ -2,6 +2,8 @@ from kafka import KafkaConsumer, KafkaProducer
 import ast
 import json
 import time
+from summary import summarize
+import settings
 
 def consume():
     max_retries = 5
@@ -10,11 +12,11 @@ def consume():
     while retry_count < max_retries:
         try:
             consumer = KafkaConsumer(
-                'data_collection',               # Topic name
-                bootstrap_servers='kafka:9093',  # Kafka broker
+                settings.KAFKA_CONSUMER_TOPICS,               # Topic name
+                bootstrap_servers=settings.KAFKA_SERVER,  # Kafka broker
                 auto_offset_reset='earliest',        # Start at the earliest available message
                 enable_auto_commit=False,             # Automatically commit offsets
-                group_id='data-collection-group',      # Consumer group ID
+                group_id=settings.KAFKA_GROUP_ID,      # Consumer group ID
                 value_deserializer=lambda x: x.decode('utf-8')  # Decode message from bytes to string
                 )
             for message in consumer:
@@ -40,11 +42,11 @@ def consume():
 def send_to_kafka(data):
     
     producer = KafkaProducer(
-        bootstrap_servers='kafka:9093',
+        bootstrap_servers=settings.KAFKA_SERVER,
         value_serializer=lambda v: json.dumps(v).encode('utf-8')
     )
     print(f"Published message from Summary:{data}")
-    producer.send('summary', data)
+    producer.send(settings.KAFKA_PUBLISHER_TOPICS, data)
     producer.flush()
 
 if __name__ == '__main__':

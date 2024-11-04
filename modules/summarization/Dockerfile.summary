@@ -12,5 +12,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY main.py ./main.py
 COPY kafka_events.py ./kafka_events.py
 COPY summary.py ./summary.py
+COPY settings.py ./settings.py
 
 CMD ["python", "./main.py"]

@@ -3,7 +3,8 @@ import json
 from kafka import KafkaConsumer
 import ast
 import time
-    
+import settings
+
 def receive_events():
     max_retries = 10
     retry_count = 0
@@ -11,11 +12,11 @@ def receive_events():
     while retry_count < max_retries:
         try:
             consumer = KafkaConsumer(
-            'summary',               # Topic name
-            bootstrap_servers='kafka:9093',  # Kafka broker
+            settings.KAFKA_CONSUMER_TOPIC,               # Topic name
+            bootstrap_servers=settings.KAFKA_SERVER,  # Kafka broker
             auto_offset_reset='earliest',        # Start at the earliest available message
             enable_auto_commit=False,             # Automatically commit offsets
-            group_id='summary-group',      # Consumer group ID
+            group_id=settings.KAFKA_GROUP_ID,      # Consumer group ID
             value_deserializer=lambda x: x.decode('utf-8')  # Decode message from bytes to string
             )
             for message in consumer:
@@ -37,9 +38,9 @@ def receive_events():
 
 def send_to_kafka(data):
     producer = KafkaProducer(
-        bootstrap_servers='kafka:9093',
+        bootstrap_servers=settings.KAFKA_SERVER,
         value_serializer=lambda v: json.dumps(v).encode('utf-8')
     )
     
-    producer.send('gradio_events', data)
+    producer.send(settings.KAFKA_PUBLISHER_TOPIC, data)
     producer.flush()

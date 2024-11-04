@@ -1,15 +1,10 @@
 import gradio as gr
 from nltk.tokenize import word_tokenize
 import ollama
-from kafka import KafkaConsumer
-import ast
-import time
 from kafka_events import send_to_kafka, receive_events
+import settings
 
-question_words = ["what", "why", "when", "where", 
-             "name", "is", "how", "do", "does", 
-             "which", "are", "could", "would", 
-             "should", "has", "have", "whom", "whose", "don't"]
+question_words = settings.QUESTION_WORDS
 chat_dict = {}
 
 def check_question(question):
@@ -22,7 +17,7 @@ def check_question(question):
 
 def pull_ollama(data):
     merged_prompt = "ABOUT_ME:{}QUESTION:{}CONTEXT:{}"
-    response = ollama.chat(model='mosrihari/unsloth_finance_alpaca', messages=[
+    response = ollama.chat(model=settings.OLLAMA_MODEL, messages=[
             {"role": "user", "content": merged_prompt.format(
                     data['about_me'],
                     data['question'],
