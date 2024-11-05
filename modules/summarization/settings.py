@@ -1,0 +1,6 @@
+SUMMARY_MODEL_NAME = "t5-base"
+SUMMARY_MODEL_MIN_GEN_LENGTH = 80
+KAFKA_SERVER = "kafka:9093"
+KAFKA_PUBLISHER_TOPICS = "summary"
+KAFKA_CONSUMER_TOPICS = "data_collection"
+KAFKA_GROUP_ID = "data-collection-group"

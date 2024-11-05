@@ -1,19 +1,11 @@
 import gradio as gr
-import nltk
-#nltk.download()
 from nltk.tokenize import word_tokenize
-from kafka import KafkaProducer
-import json
 import ollama
-from kafka import KafkaConsumer
-import ast
-import time
-question_words = ["what", "why", "when", "where", 
-             "name", "is", "how", "do", "does", 
-             "which", "are", "could", "would", 
-             "should", "has", "have", "whom", "whose", "don't"]
+from kafka_events import send_to_kafka, receive_events
+import settings
+
+question_words = settings.QUESTION_WORDS
 chat_dict = {}
-merged_prompt = "ABOUT_ME:{}QUESTION:{}CONTEXT:{}"
 
 def check_question(question):
     question = question.lower()
@@ -22,42 +14,10 @@ def check_question(question):
         return 1
     else:
         return 0
-    
-def final_response():
-    max_retries = 10
-    retry_count = 0
-    flag = False
-    while retry_count < max_retries:
-        try:
-            consumer = KafkaConsumer(
-            'summary',               # Topic name
-            bootstrap_servers='kafka:9093',  # Kafka broker
-            auto_offset_reset='earliest',        # Start at the earliest available message
-            enable_auto_commit=False,             # Automatically commit offsets
-            group_id='summary-group',      # Consumer group ID
-            value_deserializer=lambda x: x.decode('utf-8')  # Decode message from bytes to string
-            )
-            for message in consumer:
-                # Print consumed message
-                print(f"Message consumed: {message.value} of type {type(message)} from partition {message.partition}, offset {message.offset}")
-                data = message.value
-                data = ast.literal_eval(data)
-                print(data)
-                flag = True
-                consumer.commit()
-                break
-        except:
-            retry_count += 1
-            print("Stopping consumer...")
-            flag = False
-            time.sleep(10)
-        if flag:
-            break
-    #consumer.close()
 
+def pull_ollama(data):
     merged_prompt = "ABOUT_ME:{}QUESTION:{}CONTEXT:{}"
-    #ollama.pull(model='mosrihari/unsloth_finance_alpaca')
-    response = ollama.chat(model='mosrihari/unsloth_finance_alpaca', messages=[
+    response = ollama.chat(model=settings.OLLAMA_MODEL, messages=[
             {"role": "user", "content": merged_prompt.format(
                     data['about_me'],
                     data['question'],
@@ -66,14 +26,6 @@ def final_response():
             ])
     return response['message']['content']
 
-def send_to_kafka(data):
-    producer = KafkaProducer(
-        bootstrap_servers='kafka:9093',
-        value_serializer=lambda v: json.dumps(v).encode('utf-8')
-    )
-    
-    producer.send('gradio_events', data)
-    producer.flush()
 
 def respond_chat(message, history):
     
@@ -85,7 +37,8 @@ def respond_chat(message, history):
     if is_question:
         send_to_kafka(chat_dict)
         chat_dict.clear()
-        suggestion = final_response()
+        data = receive_events()
+        suggestion = pull_ollama(data)
         return suggestion
     else:
         return "Ask question about where you want to invest"
