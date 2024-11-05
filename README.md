@@ -11,6 +11,12 @@ Clone the repository and type the below commands
 2. docker-compose up
 3. Then login to localhost:7860 and ask questions
 
+# Output
+<img width="880" alt="output" src="https://github.com/user-attachments/assets/32e1bdd0-92d8-405f-b26f-d0f81190512e">
+
+
+**Response latency**: ~70 seconds per suggestion
+
 # Note: 
 1. The model that is part of ollama model store (LLAMA 3.1 finetuned) is private model as well. You can try to finetune your model and upload the same to ollama model store
 2. Uploading to model store reference link: https://youtu.be/V6LDl3Vjq-A?si=JPUZd0DHv3RiVDMb
